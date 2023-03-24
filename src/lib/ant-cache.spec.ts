@@ -101,6 +101,19 @@ test('It should be able to get primitive values', (t) => {
   });
 });
 
+test('It should be able to get a group of keys', (t) => {
+  const instance = setup();
+  const [keys] = floodByPrimitives(instance);
+  const groupSize = Math.ceil(keys.length / 2);
+  const keyGroup = keys.slice(0, groupSize);
+
+  const obj = instance.mget(...keyGroup);
+
+  for (const key of keyGroup) {
+    t.is(obj[key], instance.get(key));
+  }
+});
+
 test('If a key not exist, it should returns `undefined`', (t) => {
   const instance = setup();
   const randomKey = genKey();
@@ -160,6 +173,16 @@ test('It should delete an existing key', (t) => {
   t.is(instance.get(key), undefined);
 });
 
+test('It should be able to delete multiple keys at once', (t) => {
+  const instance = setup();
+  const [keys] = floodByPrimitives(instance);
+  const groupSize = Math.ceil(keys.length / 2);
+  const keyGroup = keys.slice(0, groupSize);
+
+  instance.mdel(...keyGroup);
+  t.is(instance.size(), keys.length - groupSize);
+});
+
 test('It should clear all', (t) => {
   const instance = setup();
   floodByPrimitives(instance);
@@ -167,16 +190,25 @@ test('It should clear all', (t) => {
   t.is(instance.keys.length, 0);
 });
 
-// test('Value should be deleted when expires', async (t) => {
-//   const key = genKey();
-//   instance.set(
-//     key,
-//     `this value should be expired after ${defaultConfig.ttl} secs`
-//   );
-//   await new Promise((resolve, reject) => {
-//     setTimeout(() => {
-//       t.is(instance.get(key), undefined);
-//       resolve(true);
-//     }, defaultConfig.ttl * 1000);
-//   });
-// });
+test('Value should be deleted when expires', async (t) => {
+  const instance = setup();
+  const key = genKey();
+  instance.set(
+    key,
+    `this value should be expired after ${defaultConfig.ttl} secs`
+  );
+  console.log(
+    '🚀 ~ file: ant-cache.spec.ts:203 ~ setTimeout ~ instance.get(key):',
+    instance.get(key)
+  );
+  await new Promise((resolve) => {
+    setTimeout(() => {
+      console.log(
+        '🚀 ~ file: ant-cache.spec.ts:203 ~ setTimeout ~ instance.get(key):',
+        instance.get(key)
+      );
+      t.is(instance.get(key), undefined);
+      resolve(true);
+    }, defaultConfig.ttl * 1000);
+  });
+});

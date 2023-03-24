@@ -139,6 +139,10 @@ class AntCache {
     return Array.from(this.mainCache.keys());
   }
 
+  public size() {
+    return this.mainCache.size;
+  }
+
   public has(key: string) {
     return this.mainCache.has(key);
   }
