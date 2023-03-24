@@ -190,25 +190,43 @@ test('It should clear all', (t) => {
   t.is(instance.keys.length, 0);
 });
 
-test('Value should be deleted when expires', async (t) => {
+test('Value should be deleted when expires by default ttl', async (t) => {
   const instance = setup();
   const key = genKey();
   instance.set(
     key,
     `this value should be expired after ${defaultConfig.ttl} secs`
   );
-  console.log(
-    '🚀 ~ file: ant-cache.spec.ts:203 ~ setTimeout ~ instance.get(key):',
-    instance.get(key)
-  );
   await new Promise((resolve) => {
     setTimeout(() => {
-      console.log(
-        '🚀 ~ file: ant-cache.spec.ts:203 ~ setTimeout ~ instance.get(key):',
-        instance.get(key)
-      );
       t.is(instance.get(key), undefined);
       resolve(true);
-    }, defaultConfig.ttl * 1000);
+    }, defaultConfig.ttl * 1005);
+  });
+});
+
+test('Value should be deleted when expires by custom ttl', async (t) => {
+  const instance = setup();
+  const ttl = 6;
+  const key = genKey();
+  instance.set(key, `this value should be expired after ${ttl} secs`, ttl);
+  await new Promise((resolve) => {
+    setTimeout(() => {
+      t.is(instance.get(key), undefined);
+      resolve(true);
+    }, ttl * 1005);
+  });
+});
+
+test('Value should exists when not expires', async (t) => {
+  const instance = setup();
+  const timeout = defaultConfig.ttl / 2;
+  const key = genKey();
+  instance.set(key, `this value should exists after ${timeout} secs`);
+  await new Promise((resolve) => {
+    setTimeout(() => {
+      t.truthy(instance.get(key));
+      resolve(true);
+    }, timeout * 1005);
   });
 });
