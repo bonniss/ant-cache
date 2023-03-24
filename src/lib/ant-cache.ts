@@ -1,17 +1,25 @@
 import { EventEmitter } from 'events';
 
 import { AntCacheEvent, AntCacheValue } from '../types/ant-cache';
+import AntCacheConfig from '../types/config';
 
-import AntCacheConfig, { defaultAntCacheConfig } from './config';
+import { defaultAntCacheConfig } from './config';
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 
 class AntCacheEventEmitter extends EventEmitter {}
 
+export class MaxKeysExceedError extends Error {
+  constructor(maxKeys) {
+    super(`Allow maximum ${maxKeys} keys.`);
+    this.name = 'MaxKeysExceedError';
+  }
+}
+
 class AntCache {
   config: AntCacheConfig;
   mainCache: Map<string, AntCacheValue>;
-  createdDateMap: Map<string, Date>;
+  createdDateMap: Map<string, number>;
 
   // store ttl in millisecs
   ttlMap: Map<string, number>;
@@ -43,8 +51,8 @@ class AntCache {
   private handleExpired() {
     // check expired keys
     this.ttlMap.forEach((ttl, key) => {
-      const createdDate = this.createdDateMap.get(key);
-      const lifespan = +new Date() - +createdDate!;
+      const ts = this.createdDateMap.get(key);
+      const lifespan = +new Date() - ts;
       if (lifespan > ttl) {
         if (isDevelopment) {
           console.info(`\`${key}\` with ttl=\`${ttl / 1000}\` expired`);
@@ -55,7 +63,6 @@ class AntCache {
             key,
             value,
             ttl,
-            createdDate,
             del: () => this._del(key),
           });
         } else {
@@ -86,16 +93,15 @@ class AntCache {
    */
   public set(key: string, val: AntCacheValue, ttl = this.config.ttl) {
     const maxKeys = this.config.maxKeys;
-    if (maxKeys && this.mainCache.keys.length === maxKeys) {
-      throw new Error('Max keys exceeds');
+    if (maxKeys && this.mainCache.size === maxKeys) {
+      throw new MaxKeysExceedError(maxKeys);
     }
-
     this.emitter.emit('before-set' as AntCacheEvent, key, val);
     const isNewKey = !this.mainCache.has(key);
     this.mainCache.set(key, val);
     if (isNewKey) {
       this.ttlMap.set(key, ttl! * 1000);
-      this.createdDateMap.set(key, new Date());
+      this.createdDateMap.set(key, +new Date());
     }
     this.emitter.emit('after-set' as AntCacheEvent, key, val);
   }

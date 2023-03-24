@@ -6,5 +6,3 @@ export const defaultAntCacheConfig: AntCacheConfig = {
   ttl: 2 * DEFAULT_CHECK_PERIOD,
   maxKeys: 0,
 };
-
-export default AntCacheConfig;

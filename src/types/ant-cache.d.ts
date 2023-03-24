@@ -7,4 +7,4 @@ export type AntCacheEvent =
 
 type Primitive = number | string | boolean | null | BigInt;
 
-export type AntCacheValue = Primitive | Record<string, Primitive>;
+export type AntCacheValue = Primitive | Record<string, Primitive> | AntCacheValue[];
