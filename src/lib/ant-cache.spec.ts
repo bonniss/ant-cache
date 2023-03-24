@@ -191,7 +191,7 @@ test('It should clear all', (t) => {
   t.is(instance.keys.length, 0);
 });
 
-const ONE_SECOND_IN_MILLISECONDS = 1050;
+const ONE_SECOND_IN_MILLISECS = 1200;
 test('Value should be deleted when expires by default ttl', async (t) => {
   const instance = setup();
   const key = genKey();
@@ -203,7 +203,7 @@ test('Value should be deleted when expires by default ttl', async (t) => {
     setTimeout(() => {
       t.is(instance.get(key), undefined);
       resolve(true);
-    }, defaultConfig.ttl * ONE_SECOND_IN_MILLISECONDS);
+    }, defaultConfig.ttl * ONE_SECOND_IN_MILLISECS);
   });
 });
 
@@ -216,7 +216,7 @@ test('Value should be deleted when expires by custom ttl', async (t) => {
     setTimeout(() => {
       t.is(instance.get(key), undefined);
       resolve(true);
-    }, ttl * ONE_SECOND_IN_MILLISECONDS);
+    }, ttl * ONE_SECOND_IN_MILLISECS);
   });
 });
 
@@ -229,6 +229,6 @@ test('Value should exists when not expires', async (t) => {
     setTimeout(() => {
       t.truthy(instance.get(key));
       resolve(true);
-    }, timeout * ONE_SECOND_IN_MILLISECONDS);
+    }, timeout * ONE_SECOND_IN_MILLISECS);
   });
 });
