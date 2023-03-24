@@ -18,7 +18,7 @@ const setup = (config?) => {
 const genKey = (): string =>
   [...Array(30)].map(() => Math.random().toString(36)[2]).join('');
 const floodByPrimitives = (instance: AntCache): [string[], any[]] => {
-  const vals = [
+  const values = [
     null,
     undefined,
     // string
@@ -34,15 +34,15 @@ const floodByPrimitives = (instance: AntCache): [string[], any[]] => {
     // bigint
     BigInt(Number.MAX_SAFE_INTEGER) + BigInt(1),
   ];
-  const keys: string[] = vals.map((_, index) => `key${index.toString()}`);
+  const keys: string[] = values.map((_, index) => `key${index.toString()}`);
   keys.forEach((key, index) => {
-    const value = vals[index];
+    const value = values[index];
     instance.set(key, value);
   });
-  return [keys, vals];
+  return [keys, values];
 };
 const floodByObjects = (instance: AntCache): [string[], any[]] => {
-  const vals = [
+  const values = [
     Object.create(null),
     Object.create({}),
     // Object literals
@@ -51,12 +51,12 @@ const floodByObjects = (instance: AntCache): [string[], any[]] => {
     [],
     [1, 'string', null, true, BigInt(1)],
   ];
-  const keys: string[] = vals.map((_, index) => `key${index.toString()}`);
+  const keys: string[] = values.map((_, index) => `key${index.toString()}`);
   keys.forEach((key, index) => {
-    const value = vals[index];
+    const value = values[index];
     instance.set(key, value);
   });
-  return [keys, vals];
+  return [keys, values];
 };
 
 /**
@@ -94,9 +94,9 @@ test('It should has the key after set', (t) => {
 
 test('It should be able to get primitive values', (t) => {
   const instance = setup();
-  const [keys, vals] = floodByPrimitives(instance);
+  const [keys, values] = floodByPrimitives(instance);
   keys.forEach((key, index) => {
-    const value = vals[index];
+    const value = values[index];
     t.is(instance.get(key), value);
   });
 });
@@ -130,9 +130,9 @@ test('It should be able to set objects', (t) => {
 
 test('It should be able to get objects', (t) => {
   const instance = setup();
-  const [keys, vals] = floodByObjects(instance);
+  const [keys, values] = floodByObjects(instance);
   keys.forEach((key, index) => {
-    const value = vals[index];
+    const value = values[index];
     t.deepEqual(instance.get(key), value);
   });
 });
