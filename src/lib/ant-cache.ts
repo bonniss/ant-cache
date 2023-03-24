@@ -4,23 +4,40 @@ import { AntCacheEvent, AntCacheValue } from '../types/ant-cache';
 import AntCacheConfig from '../types/config';
 
 import { defaultAntCacheConfig } from './config';
+import MaxKeysExceedError from './max-keys-exceed-error';
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 
 class AntCacheEventEmitter extends EventEmitter {}
 
 /**
- * When a new key should be added to the cache
- * while the cache is full (size equals to `maxKeys` in config),
- * throws this error type
+ *
+ * ### With ES Module
+ *
+ * ```js
+ * import AntCache from 'ant-cache';
+ * ```
+ *
+ * ### With CommonJS
+ *
+ * ```js
+ * const AntCache = require('ant-cache');
+ * ```
+ *
+ * ### Get started
+ *
+ * ```js
+ * // use default config
+ * const cache = new AntCache();
+ *
+ * // initialize with config
+ * const cache = new AntCache({
+ *   ttl: 120,  // in seconds
+ *   checkPeriod: 10,  // in seconds
+ *   maxKeys: 1000,  // could hold maximum 1000 key-value pairs
+ * })
+ * ```
  */
-export class MaxKeysExceedError extends Error {
-  constructor(maxKeys) {
-    super(`Allow maximum ${maxKeys} keys.`);
-    this.name = 'MaxKeysExceedError';
-  }
-}
-
 class AntCache {
   /**
    * The config of the cache
@@ -47,6 +64,7 @@ class AntCache {
   ttlMap: Map<string, number>;
 
   // statMap: Map<any, any>;
+
   /**
    * The interval timer
    */
@@ -57,6 +75,19 @@ class AntCache {
    */
   emitter: AntCacheEventEmitter;
 
+  /**
+   * Constructor
+   * @param config if no arg passed in, use defaultAntCacheConfig
+   *
+   * ```ts
+   * const DEFAULT_CHECK_PERIOD = 30;
+   * export const defaultAntCacheConfig: AntCacheConfig = {
+   *    checkPeriod: DEFAULT_CHECK_PERIOD,
+   *    ttl: 2 * DEFAULT_CHECK_PERIOD,
+   *    maxKeys: 0,
+   * };
+   * ```
+   */
   constructor(config?: AntCacheConfig) {
     this.config = { ...defaultAntCacheConfig, ...config };
     this.mainCache = new Map();
@@ -77,6 +108,10 @@ class AntCache {
     // }
   }
 
+  /**
+   * This method is called every `checkPeriod` second interval
+   * to find and handle expired keys
+   */
   private handleExpired() {
     // check expired keys
     this.ttlMap.forEach((ttl, key) => {

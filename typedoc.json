@@ -1,0 +1,9 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "out": "build/docs",
+  "excludeExternals": true,
+  "exclude": ["**/*.spec.ts"],
+  "name": "Ant Cache",
+  "entryPoints": ["./src"],
+  "categorizeByGroup": false,
+}

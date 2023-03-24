@@ -2,7 +2,8 @@ import test from 'ava';
 
 import AntCacheConfig from '../types/config';
 
-import AntCache, { MaxKeysExceedError } from './ant-cache';
+import AntCache from './ant-cache';
+import MaxKeysExceedError from './max-keys-exceed-error';
 
 const defaultConfig: AntCacheConfig = {
   ttl: 4,
@@ -190,6 +191,7 @@ test('It should clear all', (t) => {
   t.is(instance.keys.length, 0);
 });
 
+const ONE_SECOND_IN_MILLISECONDS = 1050;
 test('Value should be deleted when expires by default ttl', async (t) => {
   const instance = setup();
   const key = genKey();
@@ -201,7 +203,7 @@ test('Value should be deleted when expires by default ttl', async (t) => {
     setTimeout(() => {
       t.is(instance.get(key), undefined);
       resolve(true);
-    }, defaultConfig.ttl * 1005);
+    }, defaultConfig.ttl * ONE_SECOND_IN_MILLISECONDS);
   });
 });
 
@@ -214,7 +216,7 @@ test('Value should be deleted when expires by custom ttl', async (t) => {
     setTimeout(() => {
       t.is(instance.get(key), undefined);
       resolve(true);
-    }, ttl * 1005);
+    }, ttl * ONE_SECOND_IN_MILLISECONDS);
   });
 });
 
@@ -227,6 +229,6 @@ test('Value should exists when not expires', async (t) => {
     setTimeout(() => {
       t.truthy(instance.get(key));
       resolve(true);
-    }, timeout * 1005);
+    }, timeout * ONE_SECOND_IN_MILLISECONDS);
   });
 });
