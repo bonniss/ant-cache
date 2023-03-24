@@ -107,7 +107,7 @@ test('It should be able to get a group of keys', (t) => {
   const groupSize = Math.ceil(keys.length / 2);
   const keyGroup = keys.slice(0, groupSize);
 
-  const obj = instance.mget(...keyGroup);
+  const obj = instance.getMany(...keyGroup);
 
   for (const key of keyGroup) {
     t.is(obj[key], instance.get(key));
@@ -169,7 +169,7 @@ test('It should delete an existing key', (t) => {
   const instance = setup();
   const key = genKey();
   instance.set(key, key);
-  instance.del(key);
+  instance.delete(key);
   t.is(instance.get(key), undefined);
 });
 
@@ -179,7 +179,7 @@ test('It should be able to delete multiple keys at once', (t) => {
   const groupSize = Math.ceil(keys.length / 2);
   const keyGroup = keys.slice(0, groupSize);
 
-  instance.mdel(...keyGroup);
+  instance.deleteMany(...keyGroup);
   t.is(instance.size(), keys.length - groupSize);
 });
 
