@@ -1,5 +1,6 @@
 import test from 'ava';
 
+import { OnExpireCallbackInput } from '../types/ant-cache';
 import AntCacheConfig from '../types/config';
 
 import { AntCache } from './ant-cache';
@@ -9,12 +10,21 @@ const defaultConfig: AntCacheConfig = {
   ttl: 4,
   checkPeriod: 1,
   maxKeys: 0,
+  deleteOnExpire: true,
 };
 
-const setup = (config?) => {
+const setup = (config?: AntCacheConfig) => {
   const merged = { ...defaultConfig, ...config };
   return new AntCache(merged);
 };
+
+const pSetTimeout = (callback: () => void, timeout: number) =>
+  new Promise<void>((resolve) => {
+    setTimeout(() => {
+      callback();
+      void resolve();
+    }, timeout);
+  });
 
 const genKey = (): string =>
   [...Array(30)].map(() => Math.random().toString(36)[2]).join('');
@@ -73,6 +83,7 @@ test('It should be configured', (t) => {
   t.is(instance.config.ttl, defaultConfig.ttl);
   t.is(instance.config.checkPeriod, defaultConfig.checkPeriod);
   t.is(instance.config.maxKeys, defaultConfig.maxKeys);
+  t.is(instance.config.deleteOnExpire, true);
 });
 
 /**
@@ -160,7 +171,33 @@ test('It should throws error when exceed `maxKeys`', (t) => {
 
   const error = t.throws(fn, { instanceOf: MaxKeysExceedError });
 
-  console.error(error);
+  t.log(error);
+});
+
+/**
+ * Stats
+ */
+test('It should record stats', (t) => {
+  const instance = setup();
+  const expectedHits = 10;
+  for (let index = 0; index < expectedHits; index++) {
+    const key = genKey();
+    instance.set(key, key);
+    // increase hits
+    instance.get(key);
+  }
+
+  const expectedMisses = 10;
+  for (let index = 0; index < expectedMisses; index++) {
+    // increase misses
+    instance.get(genKey());
+  }
+
+  t.deepEqual(instance.stats(), {
+    size: expectedHits,
+    hits: expectedHits,
+    misses: expectedMisses,
+  });
 });
 
 /**
@@ -202,12 +239,9 @@ test('Value should be deleted when expires by default ttl', (t) => {
     key,
     `this value should be expired after ${defaultConfig.ttl} secs`
   );
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      t.is(instance.get(key), undefined);
-      resolve();
-    }, defaultConfig.ttl * ONE_SECOND_IN_MILLISECS);
-  });
+  return pSetTimeout(() => {
+    t.is(instance.get(key), undefined);
+  }, defaultConfig.ttl * ONE_SECOND_IN_MILLISECS);
 });
 
 test('Value should be deleted when expires by custom ttl', (t) => {
@@ -215,12 +249,9 @@ test('Value should be deleted when expires by custom ttl', (t) => {
   const ttl = 6;
   const key = genKey();
   instance.set(key, `this value should be expired after ${ttl} secs`, ttl);
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      t.is(instance.get(key), undefined);
-      resolve();
-    }, ttl * ONE_SECOND_IN_MILLISECS);
-  });
+  return pSetTimeout(() => {
+    t.is(instance.get(key), undefined);
+  }, ttl * ONE_SECOND_IN_MILLISECS);
 });
 
 test('Value should exists when not expires', (t) => {
@@ -228,10 +259,104 @@ test('Value should exists when not expires', (t) => {
   const timeout = defaultConfig.ttl / 2;
   const key = genKey();
   instance.set(key, `this value should exists after ${timeout} secs`);
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      t.truthy(instance.get(key));
-      resolve();
-    }, timeout * ONE_SECOND_IN_MILLISECS);
+  return pSetTimeout(() => {
+    t.truthy(instance.get(key));
+  }, timeout * ONE_SECOND_IN_MILLISECS);
+});
+
+test('It should work as an enhanced JS Map if checkPeriod = 0', (t) => {
+  const instance = setup({
+    checkPeriod: 0,
+    ttl: 2,
   });
+  const key = genKey();
+  instance.set(key, key);
+
+  return pSetTimeout(() => {
+    t.is(instance.get(key), key);
+  }, 2 * instance.config.ttl * ONE_SECOND_IN_MILLISECS);
+});
+
+test('It should not delete expired keys automatically when `deleteOnExpire` = false', (t) => {
+  const instance = setup({
+    ttl: 2,
+    deleteOnExpire: false,
+  });
+  const key = genKey();
+  instance.set(key, key);
+  return pSetTimeout(() => {
+    t.is(instance.get(key), key);
+  }, 2 * instance.config.ttl * ONE_SECOND_IN_MILLISECS);
+});
+
+test('It should not delete expired keys automatically if the key is inserted with `ttl` = 0', (t) => {
+  const instance = setup({
+    ttl: 2,
+  });
+  const key = genKey();
+  instance.set(key, key, 0);
+  return pSetTimeout(() => {
+    t.is(instance.get(key), key);
+  }, 2 * instance.config.ttl * ONE_SECOND_IN_MILLISECS);
+});
+
+// Hooks
+test('`before-set` and `after-set` hooks should be called', (t) => {
+  const instance = setup();
+  const key = genKey();
+  instance.on('before-set', () => {
+    t.is(instance.get(key), undefined);
+  });
+  instance.on('after-set', () => {
+    t.is(instance.get(key), key);
+  });
+  instance.set(key, key);
+});
+
+test('`before-delete` and `after-delete` hooks should be called', (t) => {
+  const instance = setup();
+  const key = genKey();
+  instance.set(key, key);
+  instance.on('before-delete', () => {
+    t.is(instance.get(key), key);
+  });
+  instance.on('after-delete', () => {
+    t.is(instance.get(key), undefined);
+  });
+  instance.delete(key);
+});
+
+test('`expired` hook should be called and expired key should be delete after `deleteCurrentKey` invoked', (t) => {
+  const instance = setup();
+  const key = genKey();
+  instance.set(key, key);
+  instance.on('expired', (inp: OnExpireCallbackInput) => {
+    t.log(
+      `{ key: ${inp.key}, value: ${inp.value}, ttl: ${inp.ttl} } has expired`
+    );
+    t.is(inp.key, key);
+    t.is(inp.value, key);
+    inp.deleteCurrentKey();
+  });
+
+  return pSetTimeout(() => {
+    t.is(instance.get(key), undefined);
+  }, defaultConfig.ttl * ONE_SECOND_IN_MILLISECS);
+});
+
+test('`expired` hook should be called and expired key should be intact when `deleteCurrentKey` not invoked', (t) => {
+  const instance = setup();
+  const key = genKey();
+  instance.set(key, key);
+  instance.on('expired', (inp: OnExpireCallbackInput) => {
+    t.log(
+      `{ key: ${inp.key}, value: ${inp.value}, ttl: ${inp.ttl} } has expired`
+    );
+    t.is(inp.key, key);
+    t.is(inp.value, key);
+  });
+
+  return pSetTimeout(() => {
+    t.is(instance.get(key), key);
+  }, defaultConfig.ttl * ONE_SECOND_IN_MILLISECS);
 });

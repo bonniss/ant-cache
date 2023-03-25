@@ -16,3 +16,16 @@ export type AntCacheValue =
   | Set<AntCacheValue>
   | { [key: string]: AntCacheValue }
   | AntCacheValue[];
+
+export type AntCacheStats = {
+  size: number;
+  hits: number;
+  misses: number;
+};
+
+export type OnExpireCallbackInput = {
+  key: string;
+  value: AntCacheValue;
+  ttl: number;
+  deleteCurrentKey: () => void;
+};

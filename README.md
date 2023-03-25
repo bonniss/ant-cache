@@ -23,13 +23,13 @@ npm install ant-cache
 With ES Module
 
  ```js
- import AntCache from 'ant-cache';
+ import { AntCache } from 'ant-cache';
  ```
 
 With CommonJS
 
  ```js
- const AntCache = require('ant-cache');
+ const { AntCache } = require('ant-cache');
  ```
 
 Then
@@ -53,8 +53,11 @@ cache.set('an object', {
   id: '0efa4d37c3097bca9c58f4eaf75f86e7efdc518a',
   message: 'awesome commit'
 }, 600)
+
+// if a value is inserted with `ttl` = 0, it will live permanently unless deleted manually
+cache.set('permanent value', 'Linus Torvald', 0)
 ```
 
-## API reference
+Exhaustive API reference and examples:
 
 [bonniss.github.io/ant-cache](https://bonniss.github.io/ant-cache/)

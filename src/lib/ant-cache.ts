@@ -1,33 +1,39 @@
 import { EventEmitter } from 'events';
 
-import { AntCacheEvent, AntCacheValue } from '../types/ant-cache';
+import {
+  AntCacheEvent,
+  AntCacheStats,
+  AntCacheValue,
+  OnExpireCallbackInput,
+} from '../types/ant-cache';
 import AntCacheConfig from '../types/config';
 
 import { defaultAntCacheConfig } from './config';
 import MaxKeysExceedError from './max-keys-exceed-error';
 
-const isDevelopment = process.env.NODE_ENV === 'development';
-
 class AntCacheEventEmitter extends EventEmitter {}
 
 /**
+ * ## Get stated
  *
- * ### With ES Module
+ * ### ES Module
  *
  * ```js
- * import AntCache from 'ant-cache';
+ * import { AntCache } from 'ant-cache';
  * ```
  *
- * ### With CommonJS
+ * ### Common JS
  *
  * ```js
- * const AntCache = require('ant-cache');
+ * const { AntCache } = require('ant-cache');
  * ```
  *
- * ### Get started
+ * ## Usage
+ *
+ * ### Use cache with TTL
  *
  * ```js
- * // use default config
+ * // initialize using default config
  * const cache = new AntCache();
  *
  * // initialize with config
@@ -37,46 +43,74 @@ class AntCacheEventEmitter extends EventEmitter {}
  *   maxKeys: 1000,  // could hold maximum 1000 key-value pairs
  * })
  * ```
+ *
+ * ### Use as an enhanced JS `Map` (no TTL)
+ *
+ * ```js
+ * const cache = new AntCache({
+ *   checkPeriod: 0
+ * });
+ * ```
  */
 export class AntCache {
   /**
    * The config of the cache
+   *
    * Initialized once in the constructor, then read-only
    */
   config: AntCacheConfig;
 
   /**
-   * The main store that interacts with the outside world
-   * Methods to get the cache info like, like `size` and `keys`, just take the info from this
+   * The main store that interacts with the outside world.
+   *
+   * Methods to get the cache info, like `size` and `keys`, apply on this.
    */
   mainCache: Map<string, AntCacheValue>;
 
   /**
-   * Store the created timestamp of every key
-   * Must be synced with the main cache every time a new value is set
+   * Store the created timestamp of every key.
+   *
+   * Must be synced with the main cache every time a new value is set.
+   *
    */
-  createdTsMap: Map<string, number>;
+  private _createdTsMap: Map<string, number>;
 
   /**
-   * Store the ttl of every key
-   * Must be synced with the main cache every time a new value is set
+   * Store the ttl of every key.
+   *
+   * Must be synced with the main cache every time a new value is set.
+   *
    */
-  ttlMap: Map<string, number>;
-
-  // statMap: Map<any, any>;
+  private _ttlMap: Map<string, number>;
 
   /**
    * The interval timer
    */
-  timerId: ReturnType<typeof setInterval>;
+  private _timerId: ReturnType<typeof setInterval>;
 
   /**
    * The event emitter
    */
-  emitter: AntCacheEventEmitter;
+  private _emitter: AntCacheEventEmitter;
+
+  /**
+   * Cache hits
+   */
+  private _hits = 0;
+
+  /**
+   * Cache misses
+   */
+  private _misses = 0;
+
+  /**
+   * `true` if `config.checkPeriod` = 0
+   */
+  private _checkPeriodDisabled = false;
 
   /**
    * Constructor
+   *
    * @param config if no arg passed in, use defaultAntCacheConfig
    *
    * ```ts
@@ -92,71 +126,81 @@ export class AntCache {
     this.config = { ...defaultAntCacheConfig, ...config };
 
     this.mainCache = new Map();
-    this.createdTsMap = new Map();
-    this.ttlMap = new Map();
-    this.emitter = new AntCacheEventEmitter();
-    this.timerId = setInterval(
-      this.handleExpired.bind(this),
-      this.config.checkPeriod! * 1000
-    );
+    this._createdTsMap = new Map();
+    this._ttlMap = new Map();
+    this._emitter = new AntCacheEventEmitter();
 
-    // if (this.config.hooks?.init) {
-    //   this.config.hooks.init({
-    //     ttl: `${this.config.ttl} seconds`,
-    //     checkPeriod: `${this.config.checkPeriod} seconds`,
-    //     maxKeys: this.config.maxKeys
-    //   })
-    // }
+    if (this.config.checkPeriod > 0) {
+      this._timerId = setInterval(
+        this.handleExpired.bind(this),
+        this.config.checkPeriod * 1000
+      );
+    } else {
+      this._checkPeriodDisabled = true;
+    }
   }
 
   /**
    * This method is called every `checkPeriod` second interval
-   * to find and handle expired keys
+   * to find and handle expired keys.
    */
   private handleExpired() {
     // check expired keys
-    this.ttlMap.forEach((ttl, key) => {
-      const ts = this.createdTsMap.get(key);
-      const lifespan = +new Date() - ts;
-      if (lifespan > ttl) {
-        if (isDevelopment) {
-          console.info(`\`${key}\` with ttl=\`${ttl / 1000}\` expired`);
-        }
-        if (this.emitter.eventNames().includes('expired' as AntCacheEvent)) {
+    this._ttlMap.forEach((ttlInMillisecs, key) => {
+      const ts = this._createdTsMap.get(key);
+      const isExpired = ts !== undefined && +new Date() - ts > ttlInMillisecs;
+      if (isExpired) {
+        if (this._emitter.eventNames().includes('expired' as AntCacheEvent)) {
           const value = this.mainCache.get(key);
-          this.emitter.emit('expired' as AntCacheEvent, {
-            key,
-            value,
-            ttl,
-            del: () => this._del(key),
-          });
+          this._emitter.emit(
+            'expired' as AntCacheEvent,
+            {
+              key,
+              value,
+              ttl: ttlInMillisecs / 1000,
+              deleteCurrentKey: () => this._del(key),
+            } as OnExpireCallbackInput
+          );
         } else {
-          this.delete(key);
+          this.config.deleteOnExpire && this.delete(key);
         }
       }
     });
   }
 
   /**
-   * Insert or update if `key` exists `value` into map
-   * Store `ttl` and `createdDate` for periodically checking
-   * @param key
+   * Insert or update a key.
+   *
+   * ```js
+   * const cache = new AntCache({ ttl: 4, checkPeriod: 1 })
+   *
+   * // use default TTL
+   * cache.set('default ttl', 'live for 4 seconds');
+   *
+   * // use custom TTL
+   * cache.set('custom ttl', 'live for 4 seconds', 4);
+   *
+   * // live permanently
+   * cache.set('no ttl', 'this will live forever unless be deleted manually', 0);
+   * ```
+   *
+   * @param key should be `string`
    * @param val
-   * @param ttl
+   * @param ttl in seconds, only take effect when inserting a new key. If `ttl` = 0, there is no TTL at all
    */
   public set(key: string, val: AntCacheValue, ttl = this.config.ttl) {
     const maxKeys = this.config.maxKeys;
     if (maxKeys && this.mainCache.size === maxKeys) {
       throw new MaxKeysExceedError(maxKeys);
     }
-    this.emitter.emit('before-set' as AntCacheEvent, key, val);
+    this._emitter.emit('before-set' as AntCacheEvent, key, val);
     const isNewKey = !this.mainCache.has(key);
     this.mainCache.set(key, val);
-    if (isNewKey) {
-      this.ttlMap.set(key, ttl! * 1000);
-      this.createdTsMap.set(key, +new Date());
+    if (!this._checkPeriodDisabled && isNewKey && ttl) {
+      this._ttlMap.set(key, ttl * 1000);
+      this._createdTsMap.set(key, +new Date());
     }
-    this.emitter.emit('after-set' as AntCacheEvent, key, val);
+    this._emitter.emit('after-set' as AntCacheEvent, key, val);
   }
 
   /**
@@ -166,8 +210,24 @@ export class AntCache {
    * @returns `undefined` if `key` not found
    */
   public get(key: string) {
-    // TODO: update stats
-    return this.mainCache.get(key);
+    if (this.mainCache.has(key)) {
+      this._hits++;
+      return this.mainCache.get(key);
+    }
+
+    this._misses++;
+    return undefined;
+  }
+
+  /**
+   * Retrieve cache stats
+   */
+  public stats(): AntCacheStats {
+    return {
+      size: this.mainCache.size,
+      hits: this._hits,
+      misses: this._misses,
+    };
   }
 
   /**
@@ -246,9 +306,9 @@ export class AntCache {
    * then emits 'after-delete' hook.
    */
   public delete(key: string) {
-    this.emitter.emit('before-delete' as AntCacheEvent, key);
+    this._emitter.emit('before-delete' as AntCacheEvent, key);
     this._del(key);
-    this.emitter.emit('after-delete' as AntCacheEvent, key);
+    this._emitter.emit('after-delete' as AntCacheEvent, key);
   }
 
   /**
@@ -264,13 +324,14 @@ export class AntCache {
   }
 
   /**
-   * Delete a key from maps in sync
-   * For internal use only
+   * Delete a key from maps in sync.
+   *
+   * For internal use only.
    */
   private _del(key: string) {
     this.mainCache.delete(key);
-    this.createdTsMap.delete(key);
-    this.ttlMap.delete(key);
+    this._createdTsMap.delete(key);
+    this._ttlMap.delete(key);
   }
 
   /**
@@ -278,8 +339,8 @@ export class AntCache {
    */
   public flushAll() {
     this.mainCache.clear();
-    this.createdTsMap.clear();
-    this.ttlMap.clear();
+    this._createdTsMap.clear();
+    this._ttlMap.clear();
   }
 
   /**
@@ -289,16 +350,17 @@ export class AntCache {
    * @param callback a callback that will be call when the event emitted
    */
   public on(eventName: AntCacheEvent, callback: (...args: any[]) => void) {
-    this.emitter.on(eventName, callback);
+    this._emitter.on(eventName, callback);
   }
 
   /**
    * Prepare to close the cache.
+   *
    * Dispose the timer and the remove all event listeners.
    */
   public dispose() {
-    clearInterval(this.timerId);
-    this.emitter.removeAllListeners();
+    clearInterval(this._timerId);
+    this._emitter.removeAllListeners();
   }
 
   /**
