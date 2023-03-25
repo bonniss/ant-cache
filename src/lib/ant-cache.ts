@@ -90,6 +90,7 @@ class AntCache {
    */
   constructor(config?: AntCacheConfig) {
     this.config = { ...defaultAntCacheConfig, ...config };
+
     this.mainCache = new Map();
     this.createdTsMap = new Map();
     this.ttlMap = new Map();
@@ -136,18 +137,6 @@ class AntCache {
     });
   }
 
-  private _del(key: string) {
-    this.mainCache.delete(key);
-    this.createdTsMap.delete(key);
-    this.ttlMap.delete(key);
-  }
-
-  public flushAll() {
-    this.mainCache.clear();
-    this.createdTsMap.clear();
-    this.ttlMap.clear();
-  }
-
   /**
    * Insert or update if `key` exists `value` into map
    * Store `ttl` and `createdDate` for periodically checking
@@ -187,7 +176,8 @@ class AntCache {
    * @param key
    * @returns an object contains values of `keys`
    */
-  public getMany(...keys: string[]) {
+  public getMany(...args: (string | string[])[]) {
+    const keys = args.flat();
     const results: Record<string, AntCacheValue> = {};
 
     for (const key of keys) {
@@ -266,10 +256,30 @@ class AntCache {
    *
    * @param keys an array of keys to delete
    */
-  public deleteMany(...keys: string[]) {
+  public deleteMany(...args: (string | string[])[]) {
+    const keys = args.flat();
     for (const key of keys) {
       this.delete(key);
     }
+  }
+
+  /**
+   * Delete a key from maps in sync
+   * For internal use only
+   */
+  private _del(key: string) {
+    this.mainCache.delete(key);
+    this.createdTsMap.delete(key);
+    this.ttlMap.delete(key);
+  }
+
+  /**
+   * Empty the cache
+   */
+  public flushAll() {
+    this.mainCache.clear();
+    this.createdTsMap.clear();
+    this.ttlMap.clear();
   }
 
   /**

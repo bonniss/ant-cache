@@ -191,6 +191,9 @@ test('It should clear all', (t) => {
   t.is(instance.keys.length, 0);
 });
 
+/**
+ * TTL
+ */
 const ONE_SECOND_IN_MILLISECS = 1500;
 test('Value should be deleted when expires by default ttl', async (t) => {
   const instance = setup();

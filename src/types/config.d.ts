@@ -1,3 +1,6 @@
+/**
+ * Ant Cache Configuration
+ */
 interface AntCacheConfig {
   /**
    * The period in seconds, as a number, used for the automatic delete check interval.

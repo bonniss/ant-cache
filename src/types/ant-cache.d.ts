@@ -5,9 +5,14 @@ export type AntCacheEvent =
   | 'before-delete'
   | 'after-delete';
 
-type Primitive = number | string | boolean | null | bigint;
-
 export type AntCacheValue =
-  | Primitive
-  | Record<string, Primitive>
+  | number
+  | string
+  | boolean
+  | null
+  | bigint
+  | Date
+  | Map<AntCacheValue, AntCacheValue>
+  | Set<AntCacheValue>
+  | { [key: string]: AntCacheValue }
   | AntCacheValue[];
