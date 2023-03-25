@@ -7,7 +7,7 @@ import MaxKeysExceedError from './max-keys-exceed-error';
 
 const defaultConfig: AntCacheConfig = {
   ttl: 4,
-  checkPeriod: 2,
+  checkPeriod: 1,
   maxKeys: 0,
 };
 
@@ -195,43 +195,43 @@ test('It should clear all', (t) => {
  * TTL
  */
 const ONE_SECOND_IN_MILLISECS = 1500;
-test('Value should be deleted when expires by default ttl', async (t) => {
+test('Value should be deleted when expires by default ttl', (t) => {
   const instance = setup();
   const key = genKey();
   instance.set(
     key,
     `this value should be expired after ${defaultConfig.ttl} secs`
   );
-  await new Promise((resolve) => {
+  return new Promise((resolve) => {
     setTimeout(() => {
       t.is(instance.get(key), undefined);
-      resolve(true);
+      resolve();
     }, defaultConfig.ttl * ONE_SECOND_IN_MILLISECS);
   });
 });
 
-test('Value should be deleted when expires by custom ttl', async (t) => {
+test('Value should be deleted when expires by custom ttl', (t) => {
   const instance = setup();
   const ttl = 6;
   const key = genKey();
   instance.set(key, `this value should be expired after ${ttl} secs`, ttl);
-  await new Promise((resolve) => {
+  return new Promise((resolve) => {
     setTimeout(() => {
       t.is(instance.get(key), undefined);
-      resolve(true);
+      resolve();
     }, ttl * ONE_SECOND_IN_MILLISECS);
   });
 });
 
-test('Value should exists when not expires', async (t) => {
+test('Value should exists when not expires', (t) => {
   const instance = setup();
   const timeout = defaultConfig.ttl / 2;
   const key = genKey();
   instance.set(key, `this value should exists after ${timeout} secs`);
-  await new Promise((resolve) => {
+  return new Promise((resolve) => {
     setTimeout(() => {
       t.truthy(instance.get(key));
-      resolve(true);
+      resolve();
     }, timeout * ONE_SECOND_IN_MILLISECS);
   });
 });
