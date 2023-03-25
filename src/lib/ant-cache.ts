@@ -38,7 +38,7 @@ class AntCacheEventEmitter extends EventEmitter {}
  * })
  * ```
  */
-class AntCache {
+export class AntCache {
   /**
    * The config of the cache
    * Initialized once in the constructor, then read-only
@@ -306,5 +306,3 @@ class AntCache {
    */
   public readonly close = this.dispose;
 }
-
-export default AntCache;

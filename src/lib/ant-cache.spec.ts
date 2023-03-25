@@ -2,7 +2,7 @@ import test from 'ava';
 
 import AntCacheConfig from '../types/config';
 
-import AntCache from './ant-cache';
+import { AntCache } from './ant-cache';
 import MaxKeysExceedError from './max-keys-exceed-error';
 
 const defaultConfig: AntCacheConfig = {
