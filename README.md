@@ -1,6 +1,8 @@
+![Ant Cache Logo](./logo.svg)
+
 # Ant Cache
 
-Minimal and simply fast in-memory cache that supports TTL for Node.
+Minimal and simply fast in-memory key-value cache that supports TTL for Node.
 
 ## Installation
 
