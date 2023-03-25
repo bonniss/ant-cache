@@ -1,4 +1,6 @@
-![Ant Cache Logo](./logo.svg)
+<p align="center">
+<img alt="Ant Cache logo" src="https://raw.githubusercontent.com/bonniss/ant-cache/main/logo.svg">
+</p>
 
 # Ant Cache
 
