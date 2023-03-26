@@ -81,7 +81,7 @@ cache.getMany('a mighty commit', 'permanent value');
 cache.getMany('a number', ['a mighty commit', 'permanent value']);
 ```
 
-## Delete
+### Delete
 
 ```js
 // delete a single key
@@ -97,7 +97,7 @@ cache.deleteMany('a number', ['a mighty commit', 'permanent value']);
 cache.flushAll();
 ```
 
-## Stats
+### Stats
 
 ```js
 cache.stats()
@@ -110,7 +110,7 @@ cache.stats()
 */
 ```
 
-## Hooks
+### Hooks
 
 By default, `deleteOnExpire` option is `true`, the cache will delete the expired value automatically. If you want to have your own logic, use `expired` hook:
 
@@ -133,6 +133,8 @@ AntCache expose several hooks:
 - before-set
 - after-set
 - expired
+
+## API reference
 
 Exhaustive API reference and examples:
 
