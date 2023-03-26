@@ -43,14 +43,14 @@ export interface AntCacheConfig {
    * The period in seconds, as a number, used for the automatic delete check interval.
    * 0 = no periodic check.
    *
-   * Default: `15 seconds`
+   * @default: 30
    */
   readonly checkPeriod?: number;
 
   /**
    * Default TTL in seconds.
    *
-   * Default: double the default `checkPeriod`
+   * @default: double the default `checkPeriod`
    */
   readonly ttl?: number;
 
@@ -59,7 +59,7 @@ export interface AntCacheConfig {
    *
    * `0` disables the key limit.
    *
-   * Default: `0`
+   * @default: 0
    */
   readonly maxKeys?: number;
 

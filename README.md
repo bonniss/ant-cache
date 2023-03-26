@@ -6,7 +6,7 @@
 
 Simply fast in-memory key-value cache that supports TTL for Node.
 
-## Installation
+## Getting started
 
 ```sh
 npm install ant-cache
@@ -133,6 +133,20 @@ AntCache expose several hooks:
 - before-set
 - after-set
 - expired
+
+### Serialization
+
+AntCache supports `serialize` and `deserialize` its content and TTLs. Any types supported by `superjson` should work as AntCache uses [superjson](https://github.com/blitz-js/superjson) under the hood.
+
+The bigger the cache is, the longer it takes to complete. In worst cases, your app could be halted. So use those methods with caution.
+
+```js
+// stringify cache content and TTLs
+const json = cache.serialize();
+
+// parse JSON string and overwrite the cache content and TTLs.
+cache.deserialize(json);
+```
 
 ## API reference
 

@@ -1,5 +1,7 @@
 import { EventEmitter } from 'events';
 
+import superjson from 'superjson';
+
 import {
   AntCacheConfig,
   AntCacheEvent,
@@ -8,13 +10,25 @@ import {
   OnExpireCallbackInput,
 } from '../types/ant-cache';
 
-import { defaultAntCacheConfig } from './config';
 import { MaxKeysExceedError } from './max-keys-exceed-error';
+import { jsMapToObject, objectToJsMap } from './utils';
 
 /**
  * Event emitter to listen to specific hooks
  */
 export class AntCacheEventEmitter extends EventEmitter {}
+
+const DEFAULT_CHECK_PERIOD = 30;
+
+/**
+ * Default cache configuration
+ */
+export const defaultAntCacheConfig: AntCacheConfig = {
+  checkPeriod: DEFAULT_CHECK_PERIOD,
+  ttl: 2 * DEFAULT_CHECK_PERIOD,
+  maxKeys: 0,
+  deleteOnExpire: true,
+};
 
 /**
  * ## Get stated
@@ -255,11 +269,7 @@ export class AntCache {
    * @returns an object of { [key]: value }
    */
   public getAll() {
-    const all: Record<string, any> = {};
-    this.mainCache.forEach((val, key) => {
-      all[key] = val;
-    });
-    return all;
+    return jsMapToObject<AntCacheValue>(this.mainCache);
   }
 
   /**
@@ -342,6 +352,48 @@ export class AntCache {
     this.mainCache.clear();
     this._createdTsMap.clear();
     this._ttlMap.clear();
+  }
+
+  /**
+   * Stringify the cache content and ttl.
+   *
+   * _Use with caution as the bigger the cache is, the longer it takes to stringify._
+   *
+   * Leave the logic handling long-running task up to you.
+   *
+   * @returns JSON string to be consumed in `deserialize`
+   */
+  public serialize(): string {
+    const content = this.getAll();
+    const ttls = jsMapToObject<number>(this._ttlMap);
+    return superjson.stringify([content, ttls]);
+  }
+
+  /**
+   * Parse the input JSON string and attempt to upsert into the current cache.
+   *
+   * __JSON string should be the output of method `serialize`__.
+   *
+   * _Existing keys will be overwritten both value and TTL_. Created timestamps will be reset.
+   *
+   * _Use with caution as the bigger the string is, the longer it takes to parse._
+   *
+   * Leave logic handling long-running task up to you.
+   *
+   * @returns
+   */
+  public deserialize(json: string) {
+    const [content, ttls]: [
+      Record<string, AntCacheValue>,
+      Record<string, number>
+    ] = superjson.parse(json);
+
+    void objectToJsMap(content, this.mainCache);
+    void objectToJsMap(ttls, this._ttlMap);
+
+    for (const key in ttls) {
+      this._createdTsMap.set(key, +new Date());
+    }
   }
 
   /**
