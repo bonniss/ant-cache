@@ -1,13 +1,23 @@
 {
   "name": "ant-cache",
   "version": "0.0.6",
-  "description": "Minimal and fast cache that supports TTL for Node",
+  "description": "Simply fast in-memory key-value cache that supports TTL for Node.",
   "main": "build/main/index.js",
   "typings": "build/main/index.d.ts",
   "module": "build/module/index.js",
   "repository": "https://github.com/bonniss/ant-cache",
   "license": "MIT",
-  "keywords": [],
+  "keywords": [
+    "cache",
+    "key-value",
+    "in-memory",
+    "caching",
+    "memory",
+    "internal",
+    "node",
+    "memcached",
+    "redis"
+  ],
   "scripts": {
     "build": "run-p build:*",
     "build:main": "tsc -p tsconfig.json",

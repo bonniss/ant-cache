@@ -6,4 +6,7 @@
   "name": "Ant Cache",
   "entryPoints": ["./src"],
   "categorizeByGroup": false,
+  "navigationLinks": {
+    "Github": "https://github.com/bonniss/ant-cache"
+  }
 }

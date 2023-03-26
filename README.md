@@ -4,7 +4,7 @@
 
 # Ant Cache
 
-Minimal and simply fast in-memory key-value cache that supports TTL for Node.
+Simply fast in-memory key-value cache that supports TTL for Node.
 
 ## Installation
 
