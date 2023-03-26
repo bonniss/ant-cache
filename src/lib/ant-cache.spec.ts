@@ -1,10 +1,9 @@
 import test from 'ava';
 
-import { OnExpireCallbackInput } from '../types/ant-cache';
-import AntCacheConfig from '../types/config';
+import { AntCacheConfig, OnExpireCallbackInput } from '../types/ant-cache';
 
 import { AntCache } from './ant-cache';
-import MaxKeysExceedError from './max-keys-exceed-error';
+import { MaxKeysExceedError } from './max-keys-exceed-error';
 
 const defaultConfig: AntCacheConfig = {
   ttl: 4,
@@ -231,7 +230,7 @@ test('It should clear all', (t) => {
 /**
  * TTL
  */
-const ONE_SECOND_IN_MILLISECS = 1500;
+const ONE_SECOND_IN_MILLISECS = 1200;
 test('Value should be deleted when expires by default ttl', (t) => {
   const instance = setup();
   const key = genKey();

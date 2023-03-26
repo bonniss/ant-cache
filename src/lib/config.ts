@@ -1,4 +1,4 @@
-import AntCacheConfig from '../types/config';
+import { AntCacheConfig } from '../types/ant-cache';
 
 /**
  * Default check period: 30 seconds

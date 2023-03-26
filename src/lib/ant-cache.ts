@@ -1,17 +1,20 @@
 import { EventEmitter } from 'events';
 
 import {
+  AntCacheConfig,
   AntCacheEvent,
   AntCacheStats,
   AntCacheValue,
   OnExpireCallbackInput,
 } from '../types/ant-cache';
-import AntCacheConfig from '../types/config';
 
 import { defaultAntCacheConfig } from './config';
-import MaxKeysExceedError from './max-keys-exceed-error';
+import { MaxKeysExceedError } from './max-keys-exceed-error';
 
-class AntCacheEventEmitter extends EventEmitter {}
+/**
+ * Event emitter to listen to specific hooks
+ */
+export class AntCacheEventEmitter extends EventEmitter {}
 
 /**
  * ## Get stated
@@ -109,8 +112,6 @@ export class AntCache {
   private _checkPeriodDisabled = false;
 
   /**
-   * Constructor
-   *
    * @param config if no arg passed in, use defaultAntCacheConfig
    *
    * ```ts
@@ -178,7 +179,7 @@ export class AntCache {
    * cache.set('default ttl', 'live for 4 seconds');
    *
    * // use custom TTL
-   * cache.set('custom ttl', 'live for 4 seconds', 4);
+   * cache.set('custom ttl', 'live for 10 seconds', 10);
    *
    * // live permanently
    * cache.set('no ttl', 'this will live forever unless be deleted manually', 0);
@@ -368,3 +369,12 @@ export class AntCache {
    */
   public readonly close = this.dispose;
 }
+
+export { MaxKeysExceedError };
+export type {
+  AntCacheConfig,
+  AntCacheEvent,
+  AntCacheStats,
+  AntCacheValue,
+  OnExpireCallbackInput,
+};

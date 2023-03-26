@@ -3,9 +3,10 @@
   "out": "build/docs",
   "excludeExternals": true,
   "exclude": ["**/*.spec.ts"],
-  "name": "Ant Cache",
   "entryPoints": ["./src"],
-  "categorizeByGroup": false,
+  "lightHighlightTheme": "light-plus",
+  "darkHighlightTheme": "dark-plus",
+  "categorizeByGroup": true,
   "navigationLinks": {
     "Github": "https://github.com/bonniss/ant-cache"
   }

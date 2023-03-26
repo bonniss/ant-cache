@@ -4,11 +4,9 @@
  * (`size()` equals to `maxKeys` in config) will
  * throw this error type
  */
-class MaxKeysExceedError extends Error {
+export class MaxKeysExceedError extends Error {
   constructor(maxKeys: number) {
     super(`Allow maximum ${maxKeys} keys.`);
     this.name = 'MaxKeysExceedError';
   }
 }
-
-export default MaxKeysExceedError;
